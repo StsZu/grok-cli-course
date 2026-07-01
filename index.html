@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grok CLI — Тренажер slash-команд</title>
+  <style>
+    :root {
+      --bg: #0a0a0a; --panel: #141414; --border: #2a2a2a;
+      --text: #f4f4f5; --muted: #a1a1aa;
+      --accent: #fafafa; --green: #4ade80; --cyan: #a1a1aa;
+      --yellow: #facc15; --blue: #93c5fd; --purple: #c4b5fd; --red: #f87171;
+      --prompt: #fafafa;
+      --font: "SF Mono", Menlo, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      background: radial-gradient(900px 500px at 20% -10%, #1f1f1f 0%, var(--bg) 55%);
+      color: var(--text); font-family: Inter, system-ui, sans-serif;
+    }
+    .wrap { max-width: 1140px; margin: 0 auto; padding: 20px; }
+    .top-nav {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .top-nav a {
+      color: var(--muted); text-decoration: none; font-size: 0.88rem;
+      padding: 6px 12px; border-radius: 8px; border: 1px solid transparent;
+    }
+    .top-nav a:hover { color: var(--text); background: #1f1f1f; }
+    .top-nav a.active { color: var(--accent); border-color: #52525b; background: #18181b; }
+    header { margin-bottom: 16px; }
+    header h1 { font-size: 1.3rem; margin: 0 0 6px; font-weight: 600; }
+    header p { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+    .layout { display: grid; grid-template-columns: 290px 1fr; gap: 14px; }
+    @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } .sidebar { order: 2; } }
+    .sidebar, .terminal-wrap {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+    }
+    .sidebar { padding: 14px; font-size: 0.82rem; }
+    .sidebar h2 {
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted); margin: 0 0 10px;
+    }
+    .cmd-list { list-style: none; padding: 0; margin: 0 0 16px; max-height: 240px; overflow-y: auto; }
+    .cmd-list li {
+      padding: 5px 8px; border-radius: 6px; cursor: pointer;
+      font-family: var(--font); font-size: 0.74rem;
+    }
+    .cmd-list li:hover { background: #1f1f1f; }
+    .cmd-list li.done { color: var(--green); }
+    .cmd-list li.done::after { content: " ✓"; }
+    .cmd-list code { color: var(--cyan); word-break: break-all; }
+    .progress { height: 6px; background: #27272a; border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
+    .progress > div {
+      height: 100%; background: linear-gradient(90deg, #fafafa, #a1a1aa);
+      width: 0%; transition: width 0.3s;
+    }
+    .stats { color: var(--muted); font-size: 0.78rem; }
+    .hint-box {
+      background: #1f1f1f; border-radius: 8px; padding: 10px;
+      color: var(--muted); line-height: 1.45; font-size: 0.78rem;
+    }
+    .module-badge {
+      display: inline-block; background: #18181b; border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 10px; font-size: 0.8rem; margin-bottom: 12px; color: var(--accent);
+    }
+    .module-nav { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; max-height: 180px; overflow-y: auto; }
+    .module-nav .btn { text-align: left; font-size: 0.7rem; padding: 6px 8px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .btn {
+      background: #27272a; border: 1px solid var(--border); color: var(--text);
+      padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.78rem;
+    }
+    .btn:hover { background: #3f3f46; }
+    .btn.active { border-color: var(--accent); color: var(--accent); }
+    .btn-primary { border-color: #71717a; }
+    .btn-test { border-color: var(--yellow); color: var(--yellow); }
+    .btn-test.active { background: rgba(250,204,21,0.12); }
+    .terminal-wrap { display: flex; flex-direction: column; height: 540px; }
+    .term-bar {
+      display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+      border-bottom: 1px solid var(--border); font-size: 0.78rem; color: var(--muted);
+    }
+    .dots { display: flex; gap: 6px; }
+    .dots span { width: 10px; height: 10px; border-radius: 50%; }
+    .dots span:nth-child(1) { background: #ff5f57; }
+    .dots span:nth-child(2) { background: #febc2e; }
+    .dots span:nth-child(3) { background: #28c840; }
+    .term-title { flex: 1; text-align: center; font-family: var(--font); }
+    .output {
+      flex: 1; display: flex; flex-direction: column; padding: 16px;
+      min-height: 0; overflow: hidden; font-family: var(--font); font-size: 0.84rem; line-height: 1.55;
+    }
+    .output-status {
+      flex-shrink: 0; color: var(--muted); font-size: 0.75rem;
+      padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--border);
+    }
+    .live-panel { flex: 1; min-height: 0; overflow-y: auto; word-break: break-word; }
+    .line-user { color: var(--prompt); }
+    .line-ok { color: var(--green); }
+    .line-err { color: var(--red); }
+    .line-warn { color: var(--yellow); }
+    .line-hl { color: var(--blue); }
+    .line-cmd { color: var(--accent); }
+    .line-muted { color: var(--muted); }
+    .line-uk-hint {
+      color: #fde68a; font-size: 0.82rem; margin-top: 8px; padding-top: 8px;
+      border-top: 1px solid rgba(253,230,138,0.2); line-height: 1.5;
+    }
+    .line-uk-hint.compact { margin-top: 2px; margin-bottom: 6px; padding-top: 0; border-top: none; padding-left: 12px; }
+    .result-box {
+      margin: 8px 0 12px; padding: 12px 14px; border-radius: 8px;
+      border: 1px solid #3f3f46; background: #18181b; border-left: 4px solid var(--accent);
+    }
+    .result-box.warn { border-color: var(--yellow); border-left-color: var(--yellow); }
+    .result-box.purple { border-color: var(--purple); border-left-color: var(--purple); }
+    .result-box.danger { border-color: var(--red); border-left-color: var(--red); }
+    .result-title { font-weight: 600; margin-bottom: 8px; font-size: 0.82rem; }
+    .input-row {
+      display: flex; align-items: center; gap: 8px; padding: 12px 14px;
+      border-top: 1px solid var(--border); background: #0a0a0a;
+    }
+    .prompt-label { color: var(--prompt); font-family: var(--font); font-size: 0.9rem; white-space: nowrap; }
+    #cmdInput {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--text); font-family: var(--font); font-size: 0.9rem;
+    }
+    .test-question { color: #fde68a; line-height: 1.6; margin-bottom: 10px; }
+    kbd {
+      background: #27272a; border: 1px solid var(--border); border-radius: 4px;
+      padding: 1px 5px; font-family: var(--font); font-size: 0.78rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="top-nav">
+      <a href="index.html" class="active">Тренажер</a>
+      <a href="course.html">Уроки</a>
+      <a href="cheatsheet.html">Шпаргалка</a>
+    </nav>
+    <header>
+      <h1>Grok CLI — Slash Commands Trainer</h1>
+      <p>
+        Інтерактивний тренажер команд Grok CLI / TUI за документацією xAI
+        <em>Modes and Commands</em>. Без API — емуляція в браузері.
+        <kbd>↑</kbd>/<kbd>↓</kbd> історія · <kbd>Tab</kbd> автодоповнення · <kbd>Shift+Tab</kbd> — режими сесії (у реальному CLI).
+      </p>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="module-badge" id="moduleBadge">1. Запуск</div>
+        <h2>Прогрес розділу</h2>
+        <div class="progress"><div id="progressBar"></div></div>
+        <div class="stats" id="progressText">0 / 0</div>
+        <h2>Розділи</h2>
+        <div class="module-nav" id="moduleNav"></div>
+        <h2>Команди розділу</h2>
+        <ul class="cmd-list" id="cmdChecklist"></ul>
+        <div class="hint-box">
+          <strong>Завдання:</strong> виконай усі команди розділу.<br><br>
+          <strong>/</strong> — command palette<br>
+          <strong>Тест:</strong> вгадай команду за підказкою
+        </div>
+        <div class="actions">
+          <button class="btn btn-test" id="btnTest" type="button">Режим тестування</button>
+          <button class="btn btn-primary" id="btnStart" type="button">Нова сесія</button>
+          <button class="btn" id="btnClear" type="button">Очистити</button>
+        </div>
+      </aside>
+      <section class="terminal-wrap">
+        <div class="term-bar">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <div class="term-title" id="termTitle">grok — ~/Projects/demo</div>
+        </div>
+        <div class="output" aria-live="polite">
+          <div class="output-status" id="outputStatus">grok> · slash commands</div>
+          <div class="live-panel" id="livePanel"></div>
+        </div>
+        <form class="input-row" id="cmdForm" autocomplete="off">
+          <span class="prompt-label" id="promptLabel">grok&gt;</span>
+          <input id="cmdInput" type="text" spellcheck="false" placeholder="grok, /context, /plan, /skills …" autofocus />
+        </form>
+      </section>
+    </div>
+  </div>
+  <script src="trainer.js"></script>
+</body>
+</html>
