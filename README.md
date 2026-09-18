@@ -1,36 +1,30 @@
-# Grok CLI — Тренажер slash-команд
+# Grok CLI (Grok Build) — курс і тренажер
 
-Інтерактивний HTML-тренажер команд **Grok CLI / TUI** українською за документацією xAI [Modes and Commands](https://docs.x.ai/build/modes-and-commands).
+Курс і тренажер **Grok CLI / TUI** українською за документацією xAI: [Modes and Commands](https://docs.x.ai/build/modes-and-commands), [Permissions](https://docs.x.ai/build/features/permissions), [CLI Reference](https://docs.x.ai/build/cli/reference).
 
-**Без API** — статичні `index.html` + `trainer.js`, працюють локально або на GitHub Pages.
+**Без API і без збірки** — статичні файли, працюють з `file://` або на GitHub Pages.
 
-## Швидкий старт
+## Шви## Сторінки
 
-```bash
-open index.html
-```
+| Файл | Зміст |
+|------|--------|
+| **index.html** | Курс: 8 модулів, 13 уроків, quiz, фінальний іспит, шпаргалка, словник (генерується з `course-config.js` і `lessons/*.js`) |
+| **trainer.html** | Тренажер-пісочниця: емуляція TUI і zsh, 8 розділів, строгий матчинг, тест-режим |
+| course.html, cheatsheet.html | Редиректи на `index.html#/modules` і `index.html#/cheatsheet` |
+| grok-cli-course/ | Архів попередніх Markdown-уроків |
 
-## GitHub Pages
+## Модулі
 
-https://stszu.github.io/grok-cli-course/
+1. Запуск і перший сеанс — встановлення, `grok --help`, `git status`, `/help`
+2. Сесії — `/new`, `/rename`, `/sessions`, `grok -c`, `/fork`, `/share`
+3. Контекст, план і відкат — `/context`, `/compact`, `/plan`, `/rewind`, `git diff`
+4. Модель і налаштування — `grok models`, `/model`, `/effort`
+5. Режими дозволів — Ask, Plan, `/auto`, `/always-approve`, `permission_mode`, allow/deny
+6. Розширення — `/hooks`, `/plugins`, `/marketplace`, `/skills`, `/mcps`, `grok inspect`
+7. Пам'ять і генерація — `/remember`, `/memory`, `/flush`, `/dream`, `/imagine`
+8. Skills і безпечний workflow — `/local:commit`, `git log -1 --stat`, `grok -p`, `grok -w`
 
-## Сторінки
-
-| Сторінка | Зміст |
-|----------|--------|
-| **index.html** | Емулятор TUI — 8 розділів, slash-команди, режим тестування |
-| **course.html** | Markdown-уроки |
-| **cheatsheet.html** | Шпаргалка команд |
-
-## Розділи тренажера
-
-1. Запуск і workflow — `grok`, `git status`, `/`
-2. Сесії — `/new`, `/resume`, `/fork`, `/quit`
-3. Контекст і план — `/context`, `/plan`, `/compact`, `/rewind`
-4. Модель і UI — `/model`, `/theme`, `/multiline`
-5. Режими і безпека — `/always-approve`, `grok --always-approve`
-6. Extensions — `/hooks`, `/plugins`, `/skills`, `/mcps`
-7. Shell commands — `/memory`, `/flush`, `/imagine`
+. Shell commands — `/memory`, `/flush`, `/imagine`
 8. Skills і ризики — `/commit`, `/local:commit`
 
 ## Принцип
@@ -41,11 +35,13 @@ https://stszu.github.io/grok-cli-course/
 
 ```
 grok-cli/
-├── index.html
-├── trainer.js
-├── course.html
-├── cheatsheet.html
-├── grok-cli-course/    # Markdown-уроки
+├── index.html          # оболонка курсу (генерується)
+├── course-config.js
+├── lessons/            # m01–m08, exam, cheatsheet
+├── engine/             # копія рушія hub (sync-engine.sh)
+├── trainer.html + trainer.js
+├── course.html, cheatsheet.html   # редиректи
+├── grok-cli-course/    # архів Markdown-уроків
 └── README.md
 ```
 
